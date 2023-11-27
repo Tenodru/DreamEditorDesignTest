@@ -1,0 +1,134 @@
+{
+    "behaviors": {
+        "Enemy Level Basic Stat Increase": {
+            "defaultStackType": {},
+            "modifiers": {
+                "maxHealthModifier": {
+                    "additiveFactor": 0.1
+                },
+                "weaponDamageModifier": {
+                    "additiveFactor": 0.1
+                },
+                "abilityDamageModifier": {
+                    "additiveFactor": 0.1
+                }
+            }
+        },
+        "Player Upgrade": {
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {}
+        },
+        "Test Enemy Auto Acquire": {
+            "defaultStackType": {}
+        },
+        "Upgrade Damage I": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "weaponDamageModifier": {
+                    "additiveFactor": 0.25
+                },
+                "abilityDamageModifier": {
+                    "additiveFactor": 0.25
+                }
+            }
+        },
+        "Upgrade Damage II": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "weaponDamageModifier": {
+                    "additiveFactor": 0.5
+                },
+                "abilityDamageModifier": {
+                    "additiveFactor": 0.5
+                }
+            }
+        },
+        "Upgrade Damage III": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "weaponDamageModifier": {
+                    "additiveFactor": 0.75
+                },
+                "abilityDamageModifier": {
+                    "additiveFactor": 0.75
+                }
+            }
+        },
+        "Upgrade Health I": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "maxHealthModifier": {
+                    "additiveFactor": 0.25
+                }
+            }
+        },
+        "Upgrade Health II": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "maxHealthModifier": {
+                    "additiveFactor": 0.5
+                }
+            }
+        },
+        "Upgrade Health III": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "maxHealthModifier": {
+                    "additiveFactor": 0.75
+                }
+            }
+        },
+        "Upgrade Movement Speed I": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "moveSpeedModifier": {
+                    "additiveFactor": 0.15
+                }
+            }
+        },
+        "Upgrade Movement Speed II": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "moveSpeedModifier": {
+                    "additiveFactor": 0.3
+                }
+            }
+        },
+        "Upgrade Movement Speed III": {
+            "parent": "Player Upgrade",
+            "family": "Upgrade",
+            "alignment": 1,
+            "defaultStackType": {},
+            "modifiers": {
+                "moveSpeedModifier": {
+                    "additiveFactor": 0.45
+                }
+            }
+        }
+    }
+}

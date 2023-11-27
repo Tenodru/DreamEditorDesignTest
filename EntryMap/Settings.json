@@ -1,0 +1,11 @@
+{
+    "settings": {
+        "type": 0,
+        "registryDependencies": [
+            {
+                "identifier": "core",
+                "version": "^1.0.0"
+            }
+        ]
+    }
+}

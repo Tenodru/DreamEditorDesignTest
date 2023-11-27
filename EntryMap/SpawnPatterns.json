@@ -1,0 +1,17 @@
+{
+    "spawnPatterns": {
+        "Spawn Pattern Test": {}
+    },
+    "spawnPatternGroups": {
+        "Spawn Group Test": {
+            "spawnGroupPattern": [
+                {
+                    "unit": "Standard MeleeUnit"
+                },
+                {
+                    "unit": "Standard RangedUnit"
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,5 @@
+<UI xmlns:bind="https://platform.wildsky.dev/xml/ui/bind">
+    <Button id="EnemyLevelUpButton" layout="flex" width="150" height="80" name="EnemyLevelUpButton">
+        <Text text="Level Up Enemies" />
+    </Button>
+</UI>

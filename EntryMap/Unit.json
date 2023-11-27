@@ -1,0 +1,190 @@
+{
+    "units": {
+        "Arcane Grenade Missile": {
+            "components": {
+                "unit": {
+                    "unitType": 1
+                },
+                "unitStats": {
+                    "selectable": false
+                }
+            },
+            "unitEventTriggers": {
+                "onUnitRemoveEffects": [
+                    "Arcane Grenade Delay"
+                ]
+            }
+        },
+        "Arcane Shotgun Orb Missile": {
+            "components": {
+                "unit": {
+                    "unitType": 1
+                },
+                "unitStats": {
+                    "selectable": false
+                },
+                "health": {
+                    "maxHealth": 999
+                }
+            }
+        },
+        "Arcane Totem": {
+            "baseUnit": "_CUnit",
+            "components": {
+                "unit": {
+                    "unitType": 0
+                },
+                "unitStats": {
+                    "selectable": false,
+                    "ignoreCollision": true
+                },
+                "health": {
+                    "maxHealth": 100,
+                    "regeneration": 0
+                },
+                "turning": {
+                    "turningSpeed": 0
+                }
+            },
+            "references": {
+                "weaponList": [
+                    "Arcane Totem Weapon"
+                ],
+                "onStartAbility": "Arcane Totem Decay"
+            }
+        },
+        "Arcane Totem Weapon Missile": {
+            "components": {
+                "unitStats": {
+                    "selectable": false
+                },
+                "health": {
+                    "maxHealth": 999
+                }
+            }
+        },
+        "Enemy Melee Unit Armored 1": {
+            "baseUnit": "Enemy Unit Base",
+            "components": {
+                "health": {
+                    "maxHealth": 20
+                },
+                "movement": {
+                    "moveSpeed": 1.5
+                }
+            },
+            "references": {
+                "weaponList": [
+                    "Enemy Melee Weapon Armored 1"
+                ]
+            }
+        },
+        "Enemy Melee Unit Armored 2": {
+            "baseUnit": "Enemy Unit Base",
+            "components": {
+                "unitStats": {
+                    "radius": 0.14
+                },
+                "health": {
+                    "maxHealth": 20
+                },
+                "movement": {
+                    "moveSpeed": 1.5
+                }
+            },
+            "references": {
+                "weaponList": [
+                    "Enemy Melee Weapon Armored 2"
+                ]
+            }
+        },
+        "Enemy Melee Unit Basic": {
+            "baseUnit": "Enemy Unit Base",
+            "components": {
+                "unitStats": {
+                    "selectable": false
+                },
+                "behavior": {
+                    "genericControllableUnit": {
+                        "leashRadius": 50,
+                        "leashResetRadius": 50
+                    }
+                }
+            },
+            "references": {
+                "weaponList": [
+                    "Enemy Melee Weapon Basic"
+                ]
+            }
+        },
+        "Enemy Melee Unit Basic 2": {
+            "baseUnit": "Enemy Unit Base",
+            "components": {
+                "unitStats": {
+                    "selectable": false
+                },
+                "behavior": {
+                    "genericControllableUnit": {
+                        "leashRadius": 50,
+                        "leashResetRadius": 50
+                    }
+                }
+            },
+            "references": {
+                "weaponList": [
+                    "Enemy Melee Weapon Basic 2"
+                ]
+            }
+        },
+        "Enemy Unit Base": {
+            "baseUnit": "_CUnit",
+            "components": {
+                "unitStats": {
+                    "selectable": false
+                },
+                "behavior": {
+                    "genericControllableUnit": {
+                        "leashRadius": 50,
+                        "leashResetRadius": 40
+                    }
+                }
+            }
+        },
+        "Enemy War Dog Normal": {
+            "baseUnit": "Enemy Unit Base",
+            "components": {
+                "health": {
+                    "maxHealth": 5
+                },
+                "movement": {
+                    "moveSpeed": 4
+                }
+            },
+            "references": {
+                "weaponList": [
+                    "Enemy War Dog Melee Weapon"
+                ]
+            }
+        },
+        "Hero ArcaneMage": {
+            "baseUnit": "_CUnit",
+            "components": {
+                "health": {
+                    "maxHealth": 50,
+                    "startHealth": 50
+                },
+                "behavior": {
+                    "genericControllableUnit": {}
+                }
+            },
+            "references": {
+                "weaponList": [
+                    "Hero ArcaneMage Weapon"
+                ]
+            }
+        },
+        "Hero ArcaneMage Weapon Missile": {
+            "baseUnit": "_CMissile"
+        }
+    }
+}

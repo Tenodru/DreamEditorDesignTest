@@ -1,0 +1,418 @@
+{
+    "actors": {
+        "Arcane Aura Action": {
+            "actionActor": {
+                "effect": "Arcane Aura Repeating Damage",
+                "launchModel": "Arcane Aura VFX",
+                "launchSite": "SiteAreaAbilities"
+            }
+        },
+        "Arcane Aura VFX": {
+            "template": false,
+            "parent": "_FX OneShot SelfRemoving",
+            "modelActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_wolfhuntress_pack_leader_aura"
+                },
+                "events": [
+                    {
+                        "actorTerm": {
+                            "persistentEffectOn": {
+                                "effect": "Arcane Aura Repeating Damage"
+                            }
+                        },
+                        "actions": [
+                            {
+                                "create": {}
+                            }
+                        ]
+                    },
+                    {
+                        "actorTerm": {
+                            "persistentEffectOff": {
+                                "effect": "Arcane Aura Repeating Damage"
+                            }
+                        },
+                        "actions": [
+                            {
+                                "destroy": {}
+                            }
+                        ]
+                    }
+                ],
+                "modelScale": 2
+            }
+        },
+        "Arcane Grenade Action": {
+            "actionActor": {
+                "effect": "Arcane Grenade Explosion Search",
+                "impactModel": "Arcane Grenade Explosion VFX"
+            }
+        },
+        "Arcane Grenade Explosion VFX": {
+            "parent": "_FX OneShot SelfRemoving",
+            "modelActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_spell_typhoon_bust_impact_aoe"
+                }
+            }
+        },
+        "Arcane Grenade Missile": {
+            "prefix": "",
+            "unitActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_whelp_blue_missile"
+                }
+            }
+        },
+        "Arcane Grenade Persistent SFX": {
+            "parent": "_SFX OneShot SelfRemoving",
+            "modelActor": {
+                "resource": {
+                    "type": "Sound",
+                    "name": "arcane_storm"
+                },
+                "events": [
+                    {
+                        "actorTerm": {
+                            "persistentEffectOn": {
+                                "effect": "Arcane Grenade Delay"
+                            }
+                        },
+                        "actions": [
+                            {
+                                "create": {}
+                            }
+                        ]
+                    },
+                    {
+                        "actorTerm": {
+                            "persistentEffectOff": {
+                                "effect": "Arcane Grenade Delay"
+                            }
+                        },
+                        "actions": [
+                            {
+                                "playSound": {
+                                    "soundName": "blast_rune_hit"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "Arcane Grenade Persistent VFX": {
+            "parent": "_FX OneShot SelfRemoving",
+            "modelActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_whelp_blue_missile"
+                },
+                "events": [
+                    {
+                        "actorTerm": {
+                            "persistentEffectOn": {
+                                "effect": "Arcane Grenade Delay"
+                            }
+                        },
+                        "actions": [
+                            {
+                                "create": {}
+                            }
+                        ]
+                    },
+                    {
+                        "actorTerm": {
+                            "persistentEffectOff": {
+                                "effect": "Arcane Grenade Delay"
+                            }
+                        },
+                        "actions": [
+                            {
+                                "create": {
+                                    "actor": "Arcane Grenade Explosion VFX"
+                                }
+                            },
+                            {
+                                "destroy": {}
+                            }
+                        ]
+                    }
+                ],
+                "modelScale": 1.5
+            }
+        },
+        "Arcane Shotgun Orb Missile": {
+            "prefix": "",
+            "unitActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_arcade_missile_blue"
+                }
+            }
+        },
+        "Arcane Totem": {
+            "prefix": "",
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation",
+                    "name": "airship_rank8_crystal"
+                },
+                "events": [
+                    {
+                        "actorTerm": {
+                            "unitDeath": {}
+                        },
+                        "actions": [
+                            {
+                                "playAnimation": {
+                                    "clipId": 1
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "actorTerm": {
+                            "actorCreate": {}
+                        },
+                        "actions": [
+                            {
+                                "playAnimation": {}
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "Arcane Totem Weapon Missile": {
+            "prefix": "",
+            "unitActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_arcade_missile_blue"
+                },
+                "modelScale": 0.5
+            }
+        },
+        "Enemy Melee Unit Armored 1": {
+            "prefix": "",
+            "parent": "_StandardUnit DecayOnDeath",
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation",
+                    "name": "barracks_troop_rank03"
+                }
+            }
+        },
+        "Enemy Melee Unit Armored 2": {
+            "prefix": "",
+            "parent": "_StandardUnit DecayOnDeath",
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation",
+                    "name": "barracks_troop_rank03_armored"
+                }
+            }
+        },
+        "Enemy Melee Unit Basic": {
+            "parent": "_StandardUnit DecayOnDeath",
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation",
+                    "name": "barracks_troop_rank01"
+                },
+                "eventMacros": [
+                    "Events StandardUnit Selectable"
+                ],
+                "selectionScale": {
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                },
+                "scaleMultiplier": {
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                }
+            }
+        },
+        "Enemy Melee Unit Basic 2": {
+            "parent": "_StandardUnit DecayOnDeath",
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation",
+                    "name": "barracks_troop_rank02"
+                },
+                "eventMacros": [
+                    "Events StandardUnit Selectable"
+                ],
+                "selectionScale": {
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                },
+                "scaleMultiplier": {
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                }
+            }
+        },
+        "Enemy Unit Base": {
+            "parent": "_StandardUnit DecayOnDeath",
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation",
+                    "name": "barracks_troop_rank01"
+                },
+                "eventMacros": [
+                    "Events StandardUnit Selectable"
+                ],
+                "selectionScale": {
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                },
+                "scaleMultiplier": {
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                }
+            }
+        },
+        "Enemy War Dog Normal": {
+            "prefix": "",
+            "parent": "_StandardUnit DecayOnDeath",
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation",
+                    "name": "modern_unit_wildsurvivor_zombiedog_normal"
+                }
+            }
+        },
+        "Hero ArcaneMage": {
+            "prefix": "",
+            "parent": "_StandardUnit DecayOnDeath",
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation",
+                    "name": "elvenmage"
+                },
+                "eventMacros": [
+                    "Events StandardUnit Selectable"
+                ],
+                "hostSites": {
+                    "SiteAreaAbilities": {},
+                    "SiteWeapon": {
+                        "offset": {
+                            "forward": 0.5,
+                            "up": 0.5
+                        }
+                    }
+                },
+                "walkAnimationSpeed": 1.75,
+                "modelScale": 1
+            }
+        },
+        "Hero ArcaneMage Weapon Attack FX": {
+            "parent": "_FX Attack SingleTarget",
+            "actionActor": {
+                "effect": "Hero ArcaneMage Weapon Launch",
+                "launchModel": "Hero ArcaneMage Weapon Launch SFX",
+                "impactModel": "Hero ArcaneMage Weapon Impact FX"
+            }
+        },
+        "Hero ArcaneMage Weapon Impact FX": {
+            "parent": "_FX OneShot SelfRemoving",
+            "modelActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_surfer_weapon_impact"
+                }
+            }
+        },
+        "Hero ArcaneMage Weapon Launch SFX": {
+            "parent": "_SFX OneShot SelfRemoving",
+            "modelActor": {
+                "resource": {
+                    "type": "Sound",
+                    "name": "cloudrabbit_weapon_launch"
+                }
+            }
+        },
+        "Hero ArcaneMage Weapon Missile": {
+            "prefix": "",
+            "unitActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_arcade_missile_white"
+                },
+                "modelScale": 0.5
+            }
+        },
+        "Ice Spike Action": {
+            "actionActor": {
+                "effect": "Ice Spike Search",
+                "impactModel": "Ice Spike Impact VFX"
+            }
+        },
+        "Ice Spike Impact VFX": {
+            "parent": "_FX OneShot SelfRemoving",
+            "modelActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_spell_icerupture_chill_aura"
+                }
+            }
+        },
+        "Ice Spike Persistent VFX": {
+            "parent": "_FX OneShot SelfRemoving",
+            "modelActor": {
+                "resource": {
+                    "type": "ParticleAnimation",
+                    "name": "vfx_generic_region_aura_ice"
+                },
+                "events": [
+                    {
+                        "actorTerm": {
+                            "persistentEffectOn": {
+                                "effect": "Ice Spike Delay"
+                            }
+                        },
+                        "actions": [
+                            {
+                                "create": {}
+                            }
+                        ]
+                    },
+                    {
+                        "actorTerm": {
+                            "persistentEffectOff": {}
+                        },
+                        "actions": [
+                            {
+                                "create": {
+                                    "actor": "Ice Spike Impact VFX"
+                                }
+                            },
+                            {
+                                "destroy": {}
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "_CUnit": {
+            "unitActor": {
+                "resource": {
+                    "type": "GpuAnimation"
+                }
+            }
+        }
+    }
+}

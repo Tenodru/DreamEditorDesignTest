@@ -1,0 +1,25 @@
+{
+    "movers": {
+        "Arcane Grenade Projectile Mover": {
+            "ballistic": {
+                "flightTime": 1,
+                "speed": 0,
+                "gravity": 10
+            },
+            "upright": true
+        },
+        "Arcane Totem Weapon Mover": {
+            "ballistic": {
+                "flightTime": 1,
+                "gravity": 10
+            }
+        },
+        "Hero ArcaneMage Weapon Missile": {
+            "ballistic": {
+                "flightTime": 0.5,
+                "speed": 0,
+                "gravity": 10
+            }
+        }
+    }
+}

@@ -1,0 +1,1228 @@
+local core = require("core")
+
+--[[ 
+
+        Updated 06.27.2023 by Alex Kong
+        Design Test for FUNOVUS
+
+        PROJECT DESCRIPTION -----------------------------------
+        A small survival roguelike. The player must survive for a set amount of time,
+        eliminating enemies to earn experience. Leveling up grants the opportunity to
+        select one of three random upgrades.
+
+        REQUIREMENTS QUICK REFERENCE --------------------------
+        - KEYBINDS:                     LINE 838
+        - ENEMY LEVEL-UP FUNCTIONALITY: LINE 1208
+        - PAIRS():                      LINE 817
+        - IPAIRS():                     LINE 519
+        - CLASSES:                      LINE 211
+        - DEEP COPY:                    LINE 829
+
+]]
+
+
+-- VARIABLES ----------------------------------------------------------------------------
+local score = 0
+local gameState = 1
+
+    -- GAME TIME
+local gameTimer = core.GameTimer:New()
+local phaseTimer = core.GameTimer:New()
+local gamePhase = 1
+
+    -- EXPERIENCE
+local currentLevel = 0
+local experience = 0
+local experienceLevel = 1
+local experienceRequired = 0
+local expGainMultiplier = 1
+
+    -- UPGRADES
+local upgradePoints = 0
+
+    -- ABILITIES AND KEYBINDS
+local abilityCount = 0
+local keybinds = {
+    0,
+    0,
+    0,
+    0
+}
+
+    -- UNITS
+local playerCharacter
+local playerCharacterUnit = DCEI.Unit("Hero ArcaneMage")
+local hero_unit = DCEI.Unit("Hero ArcaneMage")
+local enemy_melee_unit = DCEI.Unit("Enemy Melee Unit Basic")
+local enemyUnitCount = 0
+local enemyTiers = {
+    tier1 = "tier1",
+    tier2 = "tier2",
+    tier3 = "tier3"
+}
+local enemy_units = {
+    enemy_melee_unit_basic = {
+        name = enemy_melee_unit,
+        tier = enemyTiers.tier1,
+        spawnCost = 1,
+        expReward = 5
+    },
+    enemy_melee_unit_basic_2 = {
+        name = DCEI.Unit("Enemy Melee Unit Basic 2"),
+        tier = enemyTiers.tier1,
+        spawnCost = 1.5,
+        expReward = 8
+    },
+    enemy_war_dog_normal = {
+        name = DCEI.Unit("Enemy War Dog Normal"),
+        tier = enemyTiers.tier1,
+        spawnCost = 0.5,
+        expReward = 2.5
+    },
+    enemy_melee_unit_armored_1 = {
+        name = DCEI.Unit("Enemy Melee Unit Armored 1"),
+        tier = enemyTiers.tier2,
+        spawnCost = 2,
+        expReward = 12
+    },
+    enemy_melee_unit_armored_2 = {
+        name = DCEI.Unit("Enemy Melee Unit Armored 2"),
+        tier = enemyTiers.tier3,
+        spawnCost = 3,
+        expReward = 20
+    }
+}
+
+    -- SPAWNING
+local spawnBudget = 5
+local spawnBudgetMin = 5
+local spawnBudgetCap = 30
+local gamePhases = {
+    {
+        {enemyTiers.tier1, 1}
+    },
+    {
+        {enemyTiers.tier1, 0.75},
+        {enemyTiers.tier2, 0.25}
+    },
+    {
+        {enemyTiers.tier1, 0.6},
+        {enemyTiers.tier2, 0.3},
+        {enemyTiers.tier3, 0.1}
+    }
+}
+
+local enemy_spawnpoints = {
+    {20, 15},
+    {20, 16},
+    {20, 17}
+}
+
+    -- UI
+local timerDisplay
+local healthBar = {
+    background = {},
+    fill,
+    text
+}
+local experienceBar = {
+    background = {},
+    fill,
+    text
+}
+
+local upgradeScreen = {
+    background,
+    card1 = {
+        upgrade,
+        button,
+        background,
+        icon,
+        textArea,
+        upgradeName,
+        upgradeDesc
+    },
+    card2 = {
+        upgrade,
+        button,
+        background,
+        icon,
+        textArea,
+        upgradeName,
+        upgradeDesc
+    },
+    card3 = {
+        upgrade,
+        button,
+        background,
+        icon,
+        textArea,
+        upgradeName,
+        upgradeDesc
+    }
+}
+
+local gameLossScreen = {
+    background,
+    lossBanner = {
+        background,
+        text
+    },
+    buttonStack,
+    buttons = {
+        background,
+        quitButton = {
+            background,
+            text
+        },
+        restartButton = {
+            background,
+            text
+        }
+    }
+}
+
+local gameVictoryScreen = {
+    background,
+    victoryBanner = {
+        background,
+        text
+    },
+    buttonStack,
+    buttons = {
+        background,
+        quitButton = {
+            background,
+            text
+        },
+        restartButton = {
+            background,
+            text
+        }
+    }
+}
+
+local enemyLevelUpButton
+
+    -- OTHER
+local enemyLevelUpBehavior = DCEI.Behavior("Enemy Level Basic Stat Increase")
+
+
+-- CLASSES ----------------------------------------------------------------------------
+-- [ Unused Enemy class. ]
+Enemy = {}
+Enemy.__index = Enemy
+function Enemy:Create (id, unit, tier, expReward)
+    local this = {
+        id = id,
+        unit = unit,
+        tier = tier or 1,
+        expReward = expReward or 10
+    }
+    setmetatable(this, self)
+    return this
+end
+
+Spell = {}
+Spell.__index = Spell
+function Spell:Create (ability, sprite, type)
+    local this = setmetatable({
+        ability = ability,
+        sprite = sprite or DCEI.Texture("spell_manastorm"),
+        type = type or "damage"
+    }, Spell)
+    return this
+end
+
+Upgrade = {}
+Upgrade.__index = Upgrade
+function Upgrade:Create (name, sprite, desc, roll_weight)
+    local this = setmetatable({
+        name = name or "Upgrade Name",
+        sprite = sprite or DCEI.Texture("spell_manastorm"),
+        desc = desc or "Upgrade Description",
+        roll_weight = roll_weight or 0.5
+    }, Upgrade)
+    return this
+end
+
+function Upgrade:GetUpgradeType()
+    return UpgradeTypes.basic
+end
+
+StatUpgrade = Upgrade:Create()
+StatUpgrade.__index = StatUpgrade
+function StatUpgrade:Create (name, sprite, desc, roll_weight, behavior)
+    local this = setmetatable(Upgrade:Create(name, sprite, desc, roll_weight), StatUpgrade)
+    this.behavior = behavior
+    return this
+end
+
+function StatUpgrade:GetUpgradeType()
+    return UpgradeTypes.statUpgrade
+end
+
+SpellUpgrade = Upgrade:Create()
+SpellUpgrade.__index = SpellUpgrade
+function SpellUpgrade:Create (name, sprite, desc, roll_weight, spell)
+    local this = setmetatable(Upgrade:Create(name, sprite, desc, roll_weight), SpellUpgrade)
+    this.spell = spell
+    return this
+end
+
+function SpellUpgrade:GetUpgradeType()
+    return UpgradeTypes.spellUnlock
+end
+
+-- OBJECTS ----------------------------------------------------------------------------
+    -- SPELLS
+local spellArcaneGrenade = Spell:Create(
+    DCEI.Ability("Arcane Grenade"),
+    DCEI.Texture("icon_spell_manablast"),
+    "damage"
+)
+
+local spellArcaneAura = Spell:Create(
+    DCEI.Ability("Arcane Aura"),
+    DCEI.Texture("spell_manastorm"),
+    "damage"
+)
+
+local spellArcaneTotem = Spell:Create(
+    DCEI.Ability("Arcane Totem"),
+    DCEI.Texture("card_spell_comet"),
+    "damage"
+)
+
+local spells = {
+    spellArcaneGrenade,
+    spellArcaneAura,
+    spellArcaneTotem
+}
+
+    -- UPGRADES
+local upgradeHealth1 = StatUpgrade:Create(
+    "Health I", 
+    DCEI.Texture("icon_att_health"), 
+    "Increase max health by 25%", 
+    50,
+    DCEI.Behavior("Upgrade Health I")
+)
+
+local upgradeHealth2 = StatUpgrade:Create(
+    "Health II", 
+    DCEI.Texture("talent_health_bonus_silver"), 
+    "Increase max health by 50%", 
+    25,
+    DCEI.Behavior("Upgrade Health II")
+)
+
+local upgradeHealth3 = StatUpgrade:Create(
+    "Health III", 
+    DCEI.Texture("talent_health_bonus_gold"), 
+    "Increase max health by 75%", 
+    10,
+    DCEI.Behavior("Upgrade Health III")
+)
+
+local upgradeDamage1 = StatUpgrade:Create(
+    "Damage I", 
+    DCEI.Texture("wildcastle_icon_sword_white"), 
+    "Increase damage by 25%", 
+    50,
+    DCEI.Behavior("Upgrade Damage I")
+)
+
+local upgradeDamage2 = StatUpgrade:Create(
+    "Damage II", 
+    DCEI.Texture("wildcastle_icon_sword_green"), 
+    "Increase damage by 50%", 
+    25,
+    DCEI.Behavior("Upgrade Damage II")
+)
+
+local upgradeDamage3 = StatUpgrade:Create(
+    "Damage III", 
+    DCEI.Texture("wildcastle_icon_sword_blue"), 
+    "Increase damage by 75%", 
+    10,
+    DCEI.Behavior("Upgrade Damage III")
+)
+
+local upgradeMoveSpeed1 = StatUpgrade:Create(
+    "Fleet-Footed I", 
+    DCEI.Texture("btn_wave_flying"), 
+    "Increase movement speed by 15%", 
+    50,
+    DCEI.Behavior("Upgrade Movement Speed I")
+)
+
+local upgradeMoveSpeed2 = StatUpgrade:Create(
+    "Fleet-Footed II", 
+    DCEI.Texture("btn_wave_flying"), 
+    "Increase movement speed by 30%", 
+    25,
+    DCEI.Behavior("Upgrade Movement Speed II")
+)
+
+local upgradeMoveSpeed3 = StatUpgrade:Create(
+    "Fleet-Footed III", 
+    DCEI.Texture("btn_wave_flying"), 
+    "Increase movement speed by 45%", 
+    10,
+    DCEI.Behavior("Upgrade Movement Speed III")
+)
+
+local unlockArcaneGrenade = SpellUpgrade:Create(
+    "Arcane Grenade",
+    spellArcaneGrenade.sprite,
+    "Launch an arcane projectile that explodes after 2 seconds.",
+    50,
+    spellArcaneGrenade
+)
+
+local unlockArcaneAura = SpellUpgrade:Create(
+    "Arcane Aura",
+    spellArcaneAura.sprite,
+    "A damaging arcane aura surrounds you.",
+    50,
+    spellArcaneAura
+)
+
+local unlockArcaneTotem = SpellUpgrade:Create(
+    "Arcane Totem",
+    spellArcaneTotem.sprite,
+    "Summons a temporary arcane crystal that damages nearby enemies.",
+    50,
+    spellArcaneTotem
+)
+
+local upgrades = {
+    upgradeHealth1,
+    upgradeHealth2,
+    upgradeHealth3,
+    upgradeDamage1,
+    upgradeDamage2,
+    upgradeDamage3,
+    upgradeMoveSpeed1,
+    upgradeMoveSpeed2,
+    upgradeMoveSpeed3,
+    unlockArcaneGrenade,
+    unlockArcaneAura,
+    unlockArcaneTotem
+}
+
+UpgradeTypes = {
+    basic = "basic",
+    spellUnlock = "spellUnlock",
+    statUpgrade = "statUpgrade"
+}
+
+-- FUNCTIONS ----------------------------------------------------------------------------
+local function OnMapStart()
+    UpdateScore()
+    SetGameTimer()
+    SetGamePhaseTimer()
+    
+    math.randomseed(os.time())
+    gameState = 1
+    experienceRequired = CalculateExpRequiredForLevel(currentLevel)
+    playerCharacter = DCEI.CreateUnit(1, 1, hero_unit, 16, 16)
+    DCEI.SetCameraFocusUnit(playerCharacter, 1, 0, 0)
+    DCEI.BlockCameraInput(true)
+
+    SpawnEnemies()
+end
+
+-- [ Deprecated; from tutorial. ]
+function SpawnEnemyUnitAtPointOld(point)
+    DCEI.CreateUnit(-1, -1, enemy_melee_unit, point[1], point[2])
+    enemyUnitCount = enemyUnitCount + 1
+end
+
+-- [ Handles on-player-damaged events. ]
+local function OnPlayerDamaged()
+    local unit = DCEI.TriggeringUnit
+    local name = DCEI.GetUnitType(unit)
+
+    --UpdateHealthBar()
+end
+
+-- [ Handles all on-unit-death events. ]
+local function OnUnitDeath()
+    local unit = DCEI.TriggeringUnit
+    local name = DCEI.GetUnitType(unit)
+    local p = DCEI.GetUnitPosition2D(unit)
+    local point = {p.x, p.y}
+
+    if unit == playerCharacter then
+        EndGameLoss()
+    end
+
+    local enemy = ParseUnitList(enemy_units, name)
+    if enemy then
+        DCEI.LogMessage("> an enemy unit died!")
+        enemyUnitCount = enemyUnitCount - 1
+        score = score + 1
+        UpdateScore()
+        GainExp(enemy.expReward)
+        if (enemyUnitCount <= 1) then
+            SpawnEnemies()
+        end
+    end
+end
+
+-- [ Updates the player's current score. ]
+function UpdateScore()
+    DCEI.ShowObjectiveText("Score: " .. score)
+end
+
+-- [ Moves the player character to the mouse position. ]
+local function MovePlayerToMouse()
+    DCEI.Move(playerCharacter, DCEI.GetMouseWorldPosition2D().x, DCEI.GetMouseWorldPosition2D().y)
+end
+
+-- [ Ends the game and runs all game loss events. ]
+function EndGameLoss()
+    gameState = 0
+    PauseTimer(gameTimer)
+    HideUpgradeScreen()
+    ShowGameLossScreen()
+end
+
+-- [ Ends the game and runs all game victory events. ]
+function EndGameVictory()
+    gameState = 0
+    PauseTimer(gameTimer)
+    HideUpgradeScreen()
+    ResumeGame()
+    KillAllEnemies()
+    ShowGameVictoryScreen()
+end
+
+-- [ Selects 3 upgrades from the upgrade pool using RollFromTable. ]
+function RollUpgrades() 
+    local availableUpgrades = TableDeepCopy(upgrades)
+    local selectedUpgrades = {}
+
+    -- [ Rolls 3 times, removing selected upgrades from the copy pool to prevent duplicates. ]
+    for var = 1,3,1 do
+        local selectedUpgradeAndIndex = RollFromTable(availableUpgrades)
+        table.insert(selectedUpgrades, selectedUpgradeAndIndex.value)
+        table.remove(availableUpgrades, selectedUpgradeAndIndex.index)
+    end
+
+    DisplayUpgrades(selectedUpgrades)
+end
+
+-- [ Runs a weighted random selection on the specified table of upgrades. ]
+function RollFromTable(orig)
+    local returnTable = {value, index}
+    local weightSum = 0
+    for index, value in ipairs(orig) do
+        weightSum = weightSum + value.roll_weight
+    end
+
+    local selection = math.random(1, weightSum)
+    for ind, val in ipairs(orig) do
+        selection = selection - val.roll_weight
+        if (selection <= 0) then
+            DCEI.LogMessage("selected upgrade (from roll): " .. val.name)
+            returnTable.value = val
+            returnTable.index = ind
+            return returnTable
+        end
+    end
+end
+
+-- [ Applies the selected upgrade to the player.]
+-- [ If adding a Spell, remove the associated Spell unlock Upgrade from the upgrade pool. ]
+function SelectUpgrade(upgrade)
+    DCEI.LogMessage("adding upgrade: " .. upgrade.name)
+    if upgrade.GetUpgradeType() == UpgradeTypes.statUpgrade then
+        DCEI.ApplyBehaviorToUnit(playerCharacter, playerCharacter, playerCharacter, upgrade.behavior)
+    elseif upgrade.GetUpgradeType() == UpgradeTypes.spellUnlock then
+        AddAbility(upgrade.spell.ability)
+        RemoveSpellFromPool(upgrade)
+    end
+    HideUpgradeScreen()
+end
+
+-- [ Adds the specified ability to the player. ]
+function AddAbility(ability)
+    -- [ Parse through the keybind table, then check size of each entry. ]
+    -- [ An entry with a size of 0 indicates a keybind with no bound ability, so we bind the new ability to it. ]
+    local keybindSize = 0
+    for index, value in ipairs(keybinds) do
+        DCEI.LogMessage("keybindSize: " .. keybindSize)
+        DCEI.LogMessage("adding new ability: " .. ability)
+        DCEI.LogMessage("value type: " .. type(value))
+        if value == 0 then
+            BindAbility(ability, index)
+            return
+        end
+    end
+
+    for index, value in ipairs(DCEI.GetUnitAbilityList(playerCharacter)) do
+        abilityCount = abilityCount + 1
+    end
+end
+
+-- [ Binds the specified ability to the specified keybind index. ]
+function BindAbility(ability, index)
+    DCEI.AddUnitAbility(playerCharacterUnit, ability)
+    keybinds[index] = ability
+end
+
+-- [ Removes the bound ability from the specified keybind index. ]
+function UnbindAbility(ability, keybind_index)
+    --Might not implement this depending on time and number of spells
+end
+
+-- [ Removes the specified Spell (as SpellUpgrade) from the upgrade pool. ]
+function RemoveSpellFromPool(spellUpgrade) 
+    for index, value in ipairs(upgrades) do
+        if value == spellUpgrade then
+            table.remove(upgrades, index)
+        end
+    end
+end
+
+    -- EXPERIENCE 
+-- [ Increases player level, resets experience, and rolls for upgrades. ]
+function GainLevel()
+    currentLevel = currentLevel + 1
+    experienceRequired = CalculateExpRequiredForLevel(currentLevel)
+    experience = 0
+    DCEI.SetFrameSize(experienceBar.fill, 0)
+    upgradePoints = upgradePoints + 1
+    RollUpgrades()
+end
+
+-- [ Calculates experience required for the specified level. ]
+function CalculateExpRequiredForLevel(level)
+    if level == 0 then level = 1 end
+    return 10 * (1.2 ^ level)
+end
+
+-- [ Calculates and applies incoming gained XP with any multipliers. ]
+function GainExp(xp)
+    local gainAmount = xp * expGainMultiplier
+    if experience + gainAmount >= experienceRequired then
+        local extraExp = (experience + gainAmount) - experienceRequired
+        GainLevel()
+        experience = experience + extraExp
+    else
+        experience = experience + gainAmount
+    end
+    UpdateExperienceBarText()
+end
+
+    -- GAME MANAGEMENT
+-- [ Pauses the game by freezing game speed. ]
+function PauseGame()
+    core.SetGameSpeed(0)
+end
+
+-- [ Resumes regular game speed. ]
+function ResumeGame()
+    core.SetGameSpeed(1)
+end
+
+-- [ Sets the game timer. ]
+function SetGameTimer()
+    gameTimer = core.GameTimer:New({action = OnGameTimerExpire})
+    gameTimer:SetDuration(300)
+end
+
+-- [ Runs when the game timer expires. ]
+function OnGameTimerExpire(self)
+    DCEI.LogMessage(">> Congrats, you survived!")
+    EndGameVictory()
+end
+
+-- [ Runs each game timer tick. ]
+function gameTimer:Tick()
+    UpdateGameTimerDisplay()
+    MovePlayerToMouse()
+end
+
+-- [ Sets a game phase timer. ]
+-- [ Used to determine when to initiate a new game phase for spawning purposes. ]
+function SetGamePhaseTimer()
+    phaseTimer = core.GameTimer:New({action = OnPhaseTimerExpire})
+    phaseTimer:SetDuration(60)
+    DCEI.LogMessage("> New Phase: " .. gamePhase)
+end
+
+-- [ Runs when the game timer expires. ]
+function OnPhaseTimerExpire(self)
+    if gamePhase + 1 == 6 then
+        return
+    end
+    
+    gamePhase = gamePhase + 1
+    SetGamePhaseTimer()
+end
+
+-- [ Pauses the specified Timer. ]
+function PauseTimer(timer)
+    timer:SetPaused(true)
+end
+
+-- [ Unpauses the specified Timer. ]
+function UnpauseTimer(timer)
+    timer:SetPaused(false)
+end
+
+    -- ENEMY SPAWNING
+-- [ Initiates enemy spawning. ]
+function SpawnEnemies()
+    if gameState == 0 then return end
+
+    DCEI.LogMessage("spawning enemies!")
+    CalculateSpawnBudget()
+
+    -- [ Get spawnTier spawn selection percentages from gamePhases. ]
+    local spawnTierTable = GetSpawnPhaseTable()
+
+    -- [ Spawn enemies until spawnBudget is depleted. ]
+    while spawnBudget > 0 do
+        -- [ Choose a random spot on the map to spawn the next enemy. ]
+        local spawnPoint = GetRandomPoint()
+        
+        -- [ Choose a spawn tier to select enemies from. ]
+        local selectedTier = GetRandomSpawnTier(spawnTierTable)
+        
+        -- [ Parse through enemy unit table to grab all enemies that match the selected tier. ]
+        local selectedEnemies = GetEnemiesOfTier(selectedTier)
+
+        -- [ Randomly select an enemy from selectedEnemies, then spawn it. ]
+        -- [ Also have enemies beeline for the player when spawned. ]
+        local selectedEnemyAndCost = GetRandomEnemyFromSelectedEnemies(selectedEnemies)
+        local spawnedEnemy = SpawnEnemyUnitAtPoint(selectedEnemyAndCost[1], spawnPoint)
+        DCEI.Attack(spawnedEnemy, playerCharacter)
+        spawnBudget = spawnBudget - selectedEnemyAndCost[2]
+        enemyUnitCount = enemyUnitCount + 1
+    end
+
+end
+
+-- [ Calculates the spawning budget using elapsed game time. ]
+function CalculateSpawnBudget()
+    local timeElapsed = gameTimer:GetTimeElapsed()
+    local timeSpawnScale = math.floor(timeElapsed / 15)
+
+    if timeSpawnScale < spawnBudgetMin then
+        spawnBudget = spawnBudgetMin
+    elseif timeSpawnScale > spawnBudgetCap then
+        spawnBudget = spawnBudgetCap
+    else
+        spawnBudget = timeSpawnScale
+    end
+
+    DCEI.LogMessage("current spawn budget: " .. spawnBudget)
+    return spawnBudget
+end
+
+-- [ Fetch and return the current spawn percentage table from gamePhases. ]
+-- [ If current phase does not have a corresponding spawn percetnage table, use the highest table. ]
+function GetSpawnPhaseTable()
+    for index, value in ipairs(gamePhases) do
+        if index == gamePhase then
+            DCEI.LogMessage("spawnTierTable type: " .. type(value))
+            return value
+        end
+    end
+    return gamePhases[#gamePhases]
+end
+
+-- [ Calculate and return a random (x, z) spot on the map. ]
+-- [ Avoids points that are too close to the player. ]
+function GetRandomPoint()
+    local x = math.random(2, 29)
+    local z = math.random(2, 29)
+    while math.abs(x - DCEI.GetUnitPosition2D(playerCharacter).x) <= 5 do
+        x = math.random(2, 29)
+    end
+    while math.abs(z - DCEI.GetUnitPosition2D(playerCharacter).y) <= 5 do
+        z = math.random(2, 29)
+    end
+    local point = {x, z}
+    return point
+end
+
+-- [ Select and return a spawnTier from the given spawnTierTable using a weighted random selection. ]
+function GetRandomSpawnTier(spawnTierTable)
+    local selection = math.random()
+    for index, value in ipairs(spawnTierTable) do
+        selection = selection - value[2]
+        if (selection <= 0) then
+            DCEI.LogMessage("selected tier (from roll): " .. value[1])
+            return value[1]
+        end
+    end
+end
+
+-- [ Parses through enemy_units table and returns a table of enemies that match the given enemyTier. ]
+function GetEnemiesOfTier(enemyTier)
+    local matchingEnemies = {}
+    for key, value in pairs(enemy_units) do
+        if value.tier == enemyTier then
+            table.insert(matchingEnemies, value)
+        end
+    end
+    return matchingEnemies
+end
+
+-- [ Randomly selects an enemy from the given selectedEnemies table. ]
+-- [ Returns the enemy in the form of {name, spawnCost}, using indices. ]
+function GetRandomEnemyFromSelectedEnemies(selectedEnemiesTable)
+    local selectedIndex = math.random(#selectedEnemiesTable)
+    for index, value in ipairs(selectedEnemiesTable) do
+        if index == selectedIndex then
+            return {value.name, value.spawnCost}
+        end
+    end
+end
+
+-- [ Spawns the given enemy at the given point. ]
+function SpawnEnemyUnitAtPoint(enemyName, point)
+    return DCEI.CreateUnit(-1, -1, enemyName, point[1], point[2])
+end
+
+-- [ Kills all enemy units on the map. ]
+function KillAllEnemies()
+    local mapRegion = DCEI.FindRegion("mapRegion")
+    for index, value in ipairs(DCEI.GetUnitsInRegion(mapRegion)) do
+        if not (value == playerCharacter) then
+            DCEI.KillUnit(value)
+        end
+    end
+end
+
+    -- HELPER FUNCTIONS
+-- [ Checks if the specified table has the specified value. ]
+function HasValue(table, val)
+    for index, value in ipairs(table) do
+        if value == val then
+            return true
+        end
+    end
+    return false
+end
+
+-- [ Parses a Unit list to check for the specified unit, searching by name. ]
+function ParseUnitList(table, name)
+    for key, value in pairs(table) do
+        if value.name == name then
+            return value
+        end
+    end
+    return false
+end
+
+-- [ Basic table deep copy function. ]
+--[[ NOTE: Deep copy is required to make copies of the upgrades table that
+        can be manipulated while preserving the original table.
+--]]
+function TableDeepCopy(orig)
+    local newTable = {}
+    for index, value in ipairs(orig) do
+        table.insert(newTable, orig[index])
+    end
+    return newTable
+end
+
+    -- KEYPRESSES
+function OnKeyDownAbility1()
+    local hero_name = DCEI.FindUnit(hero_unit)
+    local mouse_position = DCEI.GetMouseWorldPosition2D()
+
+    if not (keybinds[1] == 0) then
+        DCEI.CastAbilityAtPosition(keybinds[1], hero_name, mouse_position.x, mouse_position.y)
+    end
+end
+
+function OnKeyDownAbility2()
+    local hero_name = DCEI.FindUnit(hero_unit)
+    local mouse_position = DCEI.GetMouseWorldPosition2D()
+
+    if not (keybinds[2] == 0) then
+        DCEI.CastAbilityAtPosition(keybinds[2], hero_name, mouse_position.x, mouse_position.y)
+    end
+end
+
+function OnKeyDownAbility3()
+    local hero_name = DCEI.FindUnit(hero_unit)
+    local mouse_position = DCEI.GetMouseWorldPosition2D()
+
+    if not (keybinds[3] == 0) then
+        DCEI.CastAbilityAtPosition(keybinds[3], hero_name, mouse_position.x, mouse_position.y)
+    end
+end
+
+function OnKeyDownAbility4()
+    local hero_name = DCEI.FindUnit(hero_unit)
+    local mouse_position = DCEI.GetMouseWorldPosition2D()
+
+    if not (keybinds[4] == 0) then
+        DCEI.CastAbilityAtPosition(keybinds[4], hero_name, mouse_position.x, mouse_position.y)
+    end
+end
+
+    -- UI
+-- [ Initializes all UI creation methods. ]
+local function CreateUI()
+    CreateEnemyLevelUpButton()
+    --CreateHealthBar()
+    CreateExperienceBar()
+    CreateUpgradeScreen()
+    CreateTimerDisplay()
+    CreateGameLossScreen()
+    CreateGameVictoryScreen()
+    DCEI.HideUnitStatusUi(2, playerCharacter)
+    DCEI.ShowUnitStatusUi(5, playerCharacter)
+    DCEI.ShowAbilitiesUi(1, playerCharacter)
+end
+
+-- [ Creates the enemy level-up button. ]
+function CreateEnemyLevelUpButton()
+    local button = DCEI.CreateFrameFromXml(DCEI.GetUiRootFrame(), "EnemyLevelUpButton")
+    DCEI.SetFrameLeftAlignmentInParent(button)
+    DCEI.SetOnClickCallback(button, OnButtonLevelUpClicked)
+end
+
+-- [ Creates the player health bar. ]
+function CreateHealthBar()
+    healthBar.background = DCEI.CreateFrame(DCEI.GetUiRootFrame())
+    healthBar.fill = DCEI.CreateFrame(healthBar.background)
+    healthBar.text = DCEI.CreateTextFrame(healthBar.background)
+    DCEI.SetFrameImage(healthBar.background, "health_bar_player_empty01")
+    DCEI.SetFrameImage(healthBar.fill, "health_bar_enemy_fill00")
+    DCEI.SetFrameSize(healthBar.background, 500, 20)
+    DCEI.SetFrameSize(healthBar.fill, 500, 20)
+    DCEI.SetFrameMinSize(healthBar.text, 1000, 20)
+    DCEI.SetFrameVerticalOffsetInParent(healthBar.background, 30)
+    DCEI.SetFrameBottomAlignmentInParent(healthBar.background)
+    DCEI.SetFrameBottomAlignmentInParent(healthBar.fill)
+    DCEI.SetFrameBottomAlignmentInParent(healthBar.text)
+    UpdateHealthBar()
+end
+
+-- [ Updates the player healthbar with health changes. ]
+function UpdateHealthBar()
+    UpdateHealthBarSize()
+    UpdateHealthBarText()
+end
+
+-- [ Updates the player health bar width with current health. ]
+function UpdateHealthBarSize()
+    local percent = DCEI.GetHealth(playerCharacter) / DCEI.GetUnitTypeHealth(DCEI.GetUnitType(playerCharacter))
+    DCEI.LogMessage("Health Percent: " .. percent)
+    local barFillSize = percent * 500
+    DCEI.LogMessage("Frame Width: " .. DCEI.GetFrameWidth(healthBar.background))
+    DCEI.SetFrameSize(healthBar.fill, barFillSize, 20)
+end
+
+-- [ Updates the player health bar text with health changes. ]
+function UpdateHealthBarText()
+    DCEI.SetTextFrameText(healthBar.text, DCEI.GetHealth(playerCharacter) .. "/" .. DCEI.GetUnitTypeHealth(DCEI.GetUnitType(playerCharacter)))
+end
+
+-- [ Creates the player experience bar. ]
+function CreateExperienceBar()
+    experienceBar.background = DCEI.CreateFrame(DCEI.GetUiRootFrame())
+    experienceBar.fill = DCEI.CreateFrame(experienceBar.background)
+    experienceBar.text = DCEI.CreateTextFrame(experienceBar.background)
+    DCEI.SetFrameImage(experienceBar.background, "health_bar_player_empty01")
+    DCEI.SetFrameImage(experienceBar.fill, "health_bar_boss_special_fill")
+    DCEI.SetTextFrameText(experienceBar.text, "0/"..CalculateExpRequiredForLevel(currentLevel))
+    DCEI.SetFrameMinSize(experienceBar.background, 1000, 20)
+    DCEI.SetFrameMinSize(experienceBar.fill, 0, 20)
+    DCEI.SetFrameMinSize(experienceBar.text, 1000, 20)
+    DCEI.SetFrameBottomAlignmentInParent(experienceBar.background)
+    DCEI.SetFrameBottomAlignmentInParent(experienceBar.fill)
+    DCEI.SetFrameBottomAlignmentInParent(experienceBar.text)
+end
+
+-- [ Updates the player experience bar width with experience gained. ]
+function UpdateExperienceBarSize()
+    local percent = experience / experienceRequired
+    local barFillSize = percent * DCEI.GetFrameWidth(experienceBar.background)
+    DCEI.SetFrameSize(experienceBar.fill, barFillSize, 20)
+end
+
+-- [ Updates the player experience bar text with experience gained. ]
+function UpdateExperienceBarText()
+    DCEI.SetTextFrameText(experienceBar.text, experience .. "/" .. experienceRequired)
+    UpdateExperienceBarSize()
+end
+
+-- [ Creates the upgrade screen UI. ]
+function CreateUpgradeScreen()
+    upgradeScreen.background = DCEI.CreateVStackFrame(DCEI.GetUiRootFrame())
+
+    upgradeScreen.card1.button = DCEI.CreateButtonFrame(upgradeScreen.background)
+    DCEI.SetFrameSize(upgradeScreen.card1.button, 700, 180)
+    DCEI.SetFrameImage(upgradeScreen.card1.button, "banner02_blue")
+
+    upgradeScreen.card1.background = DCEI.CreateHStackFrame(upgradeScreen.card1.button)
+    DCEI.SetFrameSize(upgradeScreen.card1.background, 650, 180)
+    DCEI.SetFrameSpacing(upgradeScreen.card1.background, 16)
+    DCEI.SetFramePaddingLeft(upgradeScreen.card1.background, 10)
+    DCEI.SetFramePaddingBottom(upgradeScreen.card1.background, 30)
+
+    upgradeScreen.card1.icon = DCEI.CreateFrame(upgradeScreen.card1.background)
+    DCEI.SetFrameImage(upgradeScreen.card1.icon, DCEI.Texture("spell_manastorm"))
+    DCEI.SetFrameSize(upgradeScreen.card1.icon, 100, 100)
+
+    upgradeScreen.card1.textArea = DCEI.CreateVStackFrame(upgradeScreen.card1.background)
+    DCEI.SetFrameSpacing(upgradeScreen.card1.textArea, 10)
+    DCEI.SetFrameLeftAlignmentInParent(upgradeScreen.card1.textArea)
+    DCEI.SetFramePaddingTop(upgradeScreen.card1.textArea, 32)
+
+    upgradeScreen.card1.upgradeName = DCEI.CreateTextFrame(upgradeScreen.card1.textArea)
+    DCEI.SetTextFrameText(upgradeScreen.card1.upgradeName, "Obliteration")
+    DCEI.SetTextFrameFontSize(upgradeScreen.card1.upgradeName, 20)
+    DCEI.SetTextFrameColor(upgradeScreen.card1.upgradeName, "#FFCC00")
+    DCEI.SetFrameWidth(upgradeScreen.card1.upgradeName, 500)
+    DCEI.SetTextFrameAlignment(upgradeScreen.card1.upgradeName, "start")
+
+    upgradeScreen.card1.upgradeDesc = DCEI.CreateTextFrame(upgradeScreen.card1.textArea)
+    DCEI.SetTextFrameText(upgradeScreen.card1.upgradeDesc, "Upgrade Desc Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt")
+    DCEI.SetTextFrameFontSize(upgradeScreen.card1.upgradeDesc, 18)
+    DCEI.SetFrameSize(upgradeScreen.card1.upgradeDesc, 500, 100)
+    DCEI.SetTextFrameAlignment(upgradeScreen.card1.upgradeDesc, "top-start")
+
+
+    upgradeScreen.card2.button = DCEI.CreateButtonFrame(upgradeScreen.background)
+    DCEI.SetFrameSize(upgradeScreen.card2.button, 700, 180)
+    DCEI.SetFrameImage(upgradeScreen.card2.button, "banner02_blue")
+
+    upgradeScreen.card2.background = DCEI.CreateHStackFrame(upgradeScreen.card2.button)
+    DCEI.SetFrameSize(upgradeScreen.card2.background, 650, 180)
+    DCEI.SetFrameSpacing(upgradeScreen.card2.background, 16)
+    DCEI.SetFramePaddingLeft(upgradeScreen.card2.background, 10)
+    DCEI.SetFramePaddingBottom(upgradeScreen.card2.background, 30)
+
+    upgradeScreen.card2.icon = DCEI.CreateFrame(upgradeScreen.card2.background)
+    DCEI.SetFrameImage(upgradeScreen.card2.icon, DCEI.Texture("spell_manastorm"))
+    DCEI.SetFrameSize(upgradeScreen.card2.icon, 100, 100)
+
+    upgradeScreen.card2.textArea = DCEI.CreateVStackFrame(upgradeScreen.card2.background)
+    DCEI.SetFrameSpacing(upgradeScreen.card2.textArea, 10)
+    DCEI.SetFrameLeftAlignmentInParent(upgradeScreen.card2.textArea)
+    DCEI.SetFramePaddingTop(upgradeScreen.card2.textArea, 32)
+
+    upgradeScreen.card2.upgradeName = DCEI.CreateTextFrame(upgradeScreen.card2.textArea)
+    DCEI.SetTextFrameText(upgradeScreen.card2.upgradeName, "Obliteration")
+    DCEI.SetTextFrameFontSize(upgradeScreen.card2.upgradeName, 20)
+    DCEI.SetTextFrameColor(upgradeScreen.card2.upgradeName, "#FFCC00")
+    DCEI.SetFrameWidth(upgradeScreen.card2.upgradeName, 500)
+    DCEI.SetTextFrameAlignment(upgradeScreen.card2.upgradeName, "start")
+
+    upgradeScreen.card2.upgradeDesc = DCEI.CreateTextFrame(upgradeScreen.card2.textArea)
+    DCEI.SetTextFrameText(upgradeScreen.card2.upgradeDesc, "Upgrade Desc Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt")
+    DCEI.SetTextFrameFontSize(upgradeScreen.card2.upgradeDesc, 18)
+    DCEI.SetFrameSize(upgradeScreen.card2.upgradeDesc, 500, 100)
+    DCEI.SetTextFrameAlignment(upgradeScreen.card2.upgradeDesc, "top-start")
+
+
+    upgradeScreen.card3.button = DCEI.CreateButtonFrame(upgradeScreen.background)
+    DCEI.SetFrameSize(upgradeScreen.card3.button, 700, 180)
+    DCEI.SetFrameImage(upgradeScreen.card3.button, "banner02_blue")
+
+    upgradeScreen.card3.background = DCEI.CreateHStackFrame(upgradeScreen.card3.button)
+    DCEI.SetFrameSize(upgradeScreen.card3.background, 650, 180)
+    DCEI.SetFrameSpacing(upgradeScreen.card3.background, 16)
+    DCEI.SetFramePaddingLeft(upgradeScreen.card3.background, 10)
+    DCEI.SetFramePaddingBottom(upgradeScreen.card3.background, 30)
+
+    upgradeScreen.card3.icon = DCEI.CreateFrame(upgradeScreen.card3.background)
+    DCEI.SetFrameImage(upgradeScreen.card3.icon, DCEI.Texture("spell_manastorm"))
+    DCEI.SetFrameSize(upgradeScreen.card3.icon, 100, 100)
+
+    upgradeScreen.card3.textArea = DCEI.CreateVStackFrame(upgradeScreen.card3.background)
+    DCEI.SetFrameSpacing(upgradeScreen.card3.textArea, 10)
+    DCEI.SetFrameLeftAlignmentInParent(upgradeScreen.card3.textArea)
+    DCEI.SetFramePaddingTop(upgradeScreen.card3.textArea, 32)
+
+    upgradeScreen.card3.upgradeName = DCEI.CreateTextFrame(upgradeScreen.card3.textArea)
+    DCEI.SetTextFrameText(upgradeScreen.card3.upgradeName, "Obliteration")
+    DCEI.SetTextFrameFontSize(upgradeScreen.card3.upgradeName, 20)
+    DCEI.SetTextFrameColor(upgradeScreen.card3.upgradeName, "#FFCC00")
+    DCEI.SetFrameWidth(upgradeScreen.card3.upgradeName, 500)
+    DCEI.SetTextFrameAlignment(upgradeScreen.card3.upgradeName, "start")
+
+    upgradeScreen.card3.upgradeDesc = DCEI.CreateTextFrame(upgradeScreen.card3.textArea)
+    DCEI.SetTextFrameText(upgradeScreen.card3.upgradeDesc, "Upgrade Desc Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt")
+    DCEI.SetTextFrameFontSize(upgradeScreen.card3.upgradeDesc, 18)
+    DCEI.SetFrameSize(upgradeScreen.card3.upgradeDesc, 500, 100)
+    DCEI.SetTextFrameAlignment(upgradeScreen.card3.upgradeDesc, "top-start")
+
+    DCEI.SetFrameActive(upgradeScreen.background, false)
+end
+
+-- [ Displays selected upgrades on the upgrade screen. ]
+function DisplayUpgrades(orig)
+    if gameState == 0 then return end
+
+    upgradeScreen.card1.upgrade = orig[1]
+    DCEI.SetOnClickCallback(upgradeScreen.card1.button, 
+    function()
+        SelectUpgrade(upgradeScreen.card1.upgrade)
+    end
+    )
+    DCEI.SetFrameImage(upgradeScreen.card1.icon, orig[1].sprite)
+    DCEI.SetTextFrameText(upgradeScreen.card1.upgradeName, orig[1].name)
+    DCEI.SetTextFrameText(upgradeScreen.card1.upgradeDesc, orig[1].desc)
+
+    upgradeScreen.card2.upgrade = orig[2]
+    DCEI.SetOnClickCallback(upgradeScreen.card2.button, 
+    function()
+        SelectUpgrade(upgradeScreen.card2.upgrade)
+    end
+    )
+    DCEI.SetFrameImage(upgradeScreen.card2.icon, orig[2].sprite)
+    DCEI.SetTextFrameText(upgradeScreen.card2.upgradeName, orig[2].name)
+    DCEI.SetTextFrameText(upgradeScreen.card2.upgradeDesc, orig[2].desc)
+
+    upgradeScreen.card3.upgrade = orig[3]
+    DCEI.SetOnClickCallback(upgradeScreen.card3.button, 
+    function()
+        SelectUpgrade(upgradeScreen.card3.upgrade)
+    end
+    )
+    DCEI.SetFrameImage(upgradeScreen.card3.icon, orig[3].sprite)
+    DCEI.SetTextFrameText(upgradeScreen.card3.upgradeName, orig[3].name)
+    DCEI.SetTextFrameText(upgradeScreen.card3.upgradeDesc, orig[3].desc)
+    
+    DCEI.SetFrameActive(upgradeScreen.background, true)
+    PauseGame()
+end
+
+-- [ Hides the upgrade screen. ]
+function HideUpgradeScreen() 
+    DCEI.SetFrameActive(upgradeScreen.background, false)
+    ResumeGame()
+end
+
+-- [ Creates the game timer display. ]
+function CreateTimerDisplay()
+    timerDisplay = DCEI.CreateTextFrame(DCEI.GetUiRootFrame())
+    DCEI.SetFrameSize(timerDisplay, 200, 100)
+    DCEI.SetFrameTopAlignmentInParent(timerDisplay)
+    DCEI.SetFrameLeftAlignmentInParent(timerDisplay)
+    DCEI.SetFrameHorizontalOffsetInParent(timerDisplay, -20)
+    DCEI.SetFrameVerticalOffsetInParent(timerDisplay, -60)
+    DCEI.SetTextFrameText(timerDisplay, "Time: 00:00")
+end
+
+-- [ Updates the game timer display. ]
+function UpdateGameTimerDisplay()
+    DCEI.SetTextFrameText(timerDisplay, "Time: " .. core.FormatTimeMinutes(gameTimer:GetTimeRemaining(), 0))
+end
+
+-- [ Creates the game loss screen. ]
+function CreateGameLossScreen()
+    gameLossScreen.background = DCEI.CreateVStackFrame(DCEI.GetUiRootFrame())
+
+    gameLossScreen.lossBanner.background = DCEI.CreateFrame(gameLossScreen.background)
+    DCEI.SetFrameImage(gameLossScreen.lossBanner.background, "banner02_red")
+    DCEI.SetFrameSize(gameLossScreen.lossBanner.background, 500, 100)
+    DCEI.SetFramePaddingBottom(gameLossScreen.lossBanner.background, 20)
+    gameLossScreen.lossBanner.text = DCEI.CreateTextFrame(gameLossScreen.lossBanner.background)
+    DCEI.SetTextFrameText(gameLossScreen.lossBanner.text, "You Died!")
+    DCEI.SetTextFrameFontSize(gameLossScreen.lossBanner.text, 30)
+
+    gameLossScreen.buttonStack = DCEI.CreateHStackFrame(gameLossScreen.background)
+    DCEI.SetFrameSize(gameLossScreen.buttonStack, 700, 300)
+    DCEI.SetFrameSpacing(gameLossScreen.buttonStack, 100)
+    DCEI.SetFramePaddingLeft(gameLossScreen.buttonStack, 100)
+    
+    gameLossScreen.buttons.quitButton.background = DCEI.CreateButtonFrame(gameLossScreen.buttonStack)
+    DCEI.SetFrameSize(gameLossScreen.buttons.quitButton.background, 200, 100)
+    DCEI.SetFrameImage(gameLossScreen.buttons.quitButton.background, "btn_red")
+    gameLossScreen.buttons.quitButton.text = DCEI.CreateTextFrame(gameLossScreen.buttons.quitButton.background)
+    DCEI.SetTextFrameText(gameLossScreen.buttons.quitButton.text, "Quit")
+
+    gameLossScreen.buttons.restartButton.background = DCEI.CreateButtonFrame(gameLossScreen.buttonStack)
+    DCEI.SetFrameSize(gameLossScreen.buttons.restartButton.background, 200, 100)
+    DCEI.SetFrameImage(gameLossScreen.buttons.restartButton.background, "btn_green")
+    gameLossScreen.buttons.restartButton.text = DCEI.CreateTextFrame(gameLossScreen.buttons.restartButton.background)
+    DCEI.SetTextFrameText(gameLossScreen.buttons.restartButton.text, "Try Again!")
+
+    DCEI.SetPauseMenuFrameQuitButton(gameLossScreen.buttons.quitButton.background)
+    DCEI.SetPauseMenuFrameRestartButton(gameLossScreen.buttons.restartButton.background)
+
+    DCEI.SetFrameActive(gameLossScreen.background, false)
+end
+
+-- [ Shows the game loss screen. ]
+function ShowGameLossScreen()
+    DCEI.SetFrameActive(gameLossScreen.background, true)
+end
+
+-- [ Creates the game victory screen. ]
+function CreateGameVictoryScreen()
+    gameVictoryScreen.background = DCEI.CreateVStackFrame(DCEI.GetUiRootFrame())
+
+    gameVictoryScreen.victoryBanner.background = DCEI.CreateFrame(gameVictoryScreen.background)
+    DCEI.SetFrameImage(gameVictoryScreen.victoryBanner.background, "banner02_green")
+    DCEI.SetFrameSize(gameVictoryScreen.victoryBanner.background, 500, 100)
+    DCEI.SetFramePaddingBottom(gameVictoryScreen.victoryBanner.background, 20)
+    gameVictoryScreen.victoryBanner.text = DCEI.CreateTextFrame(gameVictoryScreen.victoryBanner.background)
+    DCEI.SetTextFrameText(gameVictoryScreen.victoryBanner.text, "You Survived!")
+    DCEI.SetTextFrameFontSize(gameVictoryScreen.victoryBanner.text, 30)
+
+    gameVictoryScreen.buttonStack = DCEI.CreateHStackFrame(gameVictoryScreen.background)
+    DCEI.SetFrameSize(gameVictoryScreen.buttonStack, 700, 300)
+    DCEI.SetFrameSpacing(gameVictoryScreen.buttonStack, 100)
+    DCEI.SetFramePaddingLeft(gameVictoryScreen.buttonStack, 100)
+    
+    gameVictoryScreen.buttons.quitButton.background = DCEI.CreateButtonFrame(gameVictoryScreen.buttonStack)
+    DCEI.SetFrameSize(gameVictoryScreen.buttons.quitButton.background, 200, 100)
+    DCEI.SetFrameImage(gameVictoryScreen.buttons.quitButton.background, "btn_red")
+    gameVictoryScreen.buttons.quitButton.text = DCEI.CreateTextFrame(gameVictoryScreen.buttons.quitButton.background)
+    DCEI.SetTextFrameText(gameVictoryScreen.buttons.quitButton.text, "Quit")
+
+    gameVictoryScreen.buttons.restartButton.background = DCEI.CreateButtonFrame(gameVictoryScreen.buttonStack)
+    DCEI.SetFrameSize(gameVictoryScreen.buttons.restartButton.background, 200, 100)
+    DCEI.SetFrameImage(gameVictoryScreen.buttons.restartButton.background, "btn_green")
+    gameVictoryScreen.buttons.restartButton.text = DCEI.CreateTextFrame(gameVictoryScreen.buttons.restartButton.background)
+    DCEI.SetTextFrameText(gameVictoryScreen.buttons.restartButton.text, "Go Again!")
+
+    DCEI.SetPauseMenuFrameQuitButton(gameVictoryScreen.buttons.quitButton.background)
+    DCEI.SetPauseMenuFrameRestartButton(gameVictoryScreen.buttons.restartButton.background)
+
+    DCEI.SetFrameActive(gameVictoryScreen.background, false)
+end
+
+-- [ Shows the game victory screen. ]
+function ShowGameVictoryScreen()
+    DCEI.SetFrameActive(gameVictoryScreen.background, true)
+end
+
+-- [ Applies a level-up behavior to all enemies on the map. ]
+function OnButtonLevelUpClicked()
+    local currentEnemies = DCEI.FindUnitsByTeamId(-1)
+    for key,value in pairs(currentEnemies) do
+        DCEI.ApplyBehaviorToUnit(value, value, value, enemyLevelUpBehavior)
+    end
+    DCEI.LogMessage("Leveled up existing enemies.")
+end
+
+-- TRIGGERS ----------------------------------------------------------------------------
+DCEI.TriggerAddMappedKeyDownEvent("Ability1", OnKeyDownAbility1)
+DCEI.TriggerAddMappedKeyDownEvent("Ability2", OnKeyDownAbility2)
+DCEI.TriggerAddMappedKeyDownEvent("Ability3", OnKeyDownAbility3)
+DCEI.TriggerAddMappedKeyDownEvent("Ability4", OnKeyDownAbility4)
+
+
+-- INITIALIZATION ----------------------------------------------------------------------------
+OnMapStart()
+CreateUI()
+DCEI.SelectUnit(playerCharacter)
+DCEI.TriggerAddUnitDamageEvent(playerCharacter, OnPlayerDamaged)
+DCEI.TriggerAddUnitDiedEvent(DCEI.UnitAny, OnUnitDeath)

@@ -1,0 +1,68 @@
+{
+    "abilities": {
+        "Arcane Aura": {
+            "castType": 2,
+            "effect": "Arcane Aura Repeating Damage",
+            "stats": {
+                "period": 5
+            },
+            "canCastWhileMoving": true,
+            "commandCardIcon": "icon_spell_manastorm"
+        },
+        "Arcane Grenade": {
+            "effect": "Arcane Grenade Launch",
+            "stats": {
+                "period": 5,
+                "range": 99
+            },
+            "canCastWhileMoving": true,
+            "commandCardIcon": "icon_spell_manablast"
+        },
+        "Arcane Shotgun": {
+            "comment": "Incomplete",
+            "castType": 2,
+            "effect": "Arcane Shotgun Fire Orbs",
+            "stats": {
+                "period": 4
+            },
+            "canCastWhileMoving": true
+        },
+        "Arcane Totem": {
+            "castType": 2,
+            "effect": "Arcane Totem Create",
+            "stats": {
+                "period": 8,
+                "range": 10,
+                "scanRange": 10
+            },
+            "canCastWhileMoving": true,
+            "targetFilter": {
+                "player": 2,
+                "ally": 2
+            },
+            "commandCardIcon": "card_spell_comet",
+            "commandCardDisplayText": ""
+        },
+        "Arcane Totem Attack": {
+            "castType": 2,
+            "effect": "Arcane Totem Attack Search",
+            "stats": {
+                "period": 1
+            },
+            "targetFilter": {
+                "player": 2,
+                "ally": 2
+            }
+        },
+        "Arcane Totem Decay": {
+            "castType": 1,
+            "effect": "Arcane Totem Decay"
+        },
+        "Ice Spike": {
+            "effect": "Ice Spike Delay",
+            "stats": {
+                "range": 99
+            }
+        }
+    }
+}

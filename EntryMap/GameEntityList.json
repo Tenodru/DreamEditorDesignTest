@@ -1,0 +1,1 @@
+{ "RegionList": [ { "regionName": "mapRegion", "center": { "X": 15.5, "Y": 0, "Z": 15.5 }, "sizeX": 30, "sizeY": 30, "regionColor": { "r": 255, "g": 255, "b": 255, "a": 255 } } ] }

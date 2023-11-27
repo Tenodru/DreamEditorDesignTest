@@ -1,0 +1,82 @@
+{
+    "weapons": {
+        "Arcane Totem Weapon": {
+            "effectName": "Arcane Totem Weapon Launch",
+            "independentTargetAcquisition": true,
+            "independentPreAndBackSwing": true,
+            "canFireWhileMoving": true,
+            "stats": {
+                "preSwing": 0.2,
+                "backSwing": 0.2,
+                "range": 10,
+                "scanRange": 10,
+                "arc": 360
+            },
+            "targetFilter": {
+                "player": 2
+            }
+        },
+        "Enemy Melee Weapon Armored 1": {
+            "parent": "_StandardMeleeWeapon",
+            "effectName": "Standard Enemy Melee Damage Basic 2",
+            "stats": {
+                "preSwing": 0.25,
+                "backSwing": 0.25,
+                "range": 1,
+                "arc": 10
+            }
+        },
+        "Enemy Melee Weapon Armored 2": {
+            "parent": "_StandardMeleeWeapon",
+            "effectName": "Standard Enemy Melee Damage Tier 3",
+            "stats": {
+                "preSwing": 0.25,
+                "backSwing": 0.25,
+                "range": 1,
+                "arc": 10
+            }
+        },
+        "Enemy Melee Weapon Basic": {
+            "parent": "_StandardMeleeWeapon",
+            "effectName": "Standard Enemy Melee Damage Basic",
+            "stats": {
+                "preSwing": 0.2,
+                "backSwing": 0.2,
+                "range": 1,
+                "arc": 10
+            }
+        },
+        "Enemy Melee Weapon Basic 2": {
+            "parent": "_StandardMeleeWeapon",
+            "effectName": "Standard Enemy Melee Damage Basic 2",
+            "stats": {
+                "preSwing": 0.2,
+                "backSwing": 0.2,
+                "range": 1,
+                "arc": 10
+            }
+        },
+        "Enemy War Dog Melee Weapon": {
+            "parent": "_StandardMeleeWeapon",
+            "effectName": "Standard Enemy Melee Damage Basic",
+            "stats": {
+                "preSwing": 0.1,
+                "backSwing": 0.1,
+                "range": 1,
+                "scanRange": 2
+            }
+        },
+        "Hero ArcaneMage Weapon": {
+            "parent": "_StandardRangedWeapon",
+            "effectName": "Hero ArcaneMage Weapon Launch",
+            "independentTargetAcquisition": true,
+            "independentPreAndBackSwing": true,
+            "canFireWhileMoving": true,
+            "stats": {
+                "range": 8,
+                "scanRange": 8,
+                "arc": 360
+            }
+        }
+    }
+}

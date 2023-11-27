@@ -1,0 +1,212 @@
+{
+    "effects": {
+        "Arcane Aura Damage": {
+            "damage": {
+                "damageAmount": 1
+            }
+        },
+        "Arcane Aura Repeating Damage": {
+            "persistent": {
+                "periodicCount": 5,
+                "periodicDurations": [
+                    0.5
+                ],
+                "periodicEffects": [
+                    "Arcane Aura Search"
+                ]
+            }
+        },
+        "Arcane Aura Search": {
+            "areaSearch": {
+                "areaSearchType": {
+                    "circle": {
+                        "radius": 3
+                    }
+                },
+                "filter": {
+                    "player": 2,
+                    "ally": 2,
+                    "missile": 2
+                },
+                "effect": "Arcane Aura Damage"
+            }
+        },
+        "Arcane Grenade Delay": {
+            "persistent": {
+                "periodicCount": 1,
+                "finalEffect": "Arcane Grenade Explosion Search",
+                "periodicDurations": [
+                    2
+                ]
+            }
+        },
+        "Arcane Grenade Explosion Damage": {
+            "damage": {
+                "damageAmount": 5
+            }
+        },
+        "Arcane Grenade Explosion Search": {
+            "areaSearch": {
+                "areaSearchType": {
+                    "circle": {
+                        "radius": 1.5
+                    }
+                },
+                "filter": {
+                    "player": 2,
+                    "ally": 2,
+                    "missile": 2
+                },
+                "effect": "Arcane Grenade Explosion Damage"
+            }
+        },
+        "Arcane Grenade Impact Damage": {
+            "damage": {
+                "damageAmount": 2
+            }
+        },
+        "Arcane Grenade Launch": {
+            "launchMissile": {
+                "missileUnit": "Arcane Grenade Missile",
+                "missileDeathType": 0,
+                "effect": "Arcane Grenade Delay",
+                "mover": "Arcane Grenade Projectile Mover"
+            }
+        },
+        "Arcane Shotgun Fire Orbs": {
+            "launchMissile": {}
+        },
+        "Arcane Shotgun Fire Orbs Sequence": {
+            "persistent": {}
+        },
+        "Arcane Totem Attack Search": {
+            "areaSearch": {
+                "areaSearchType": {
+                    "circle": {
+                        "radius": 4
+                    }
+                },
+                "maxUnitCount": 1,
+                "filter": {
+                    "player": 2,
+                    "ally": 2
+                },
+                "effect": "Arcane Totem Weapon Launch"
+            }
+        },
+        "Arcane Totem Create": {
+            "spawn": {
+                "unit": "Arcane Totem",
+                "owner": 3,
+                "location": 3
+            }
+        },
+        "Arcane Totem Decay": {
+            "persistent": {
+                "periodicCount": 1,
+                "finalEffect": "Arcane Totem Destroy",
+                "location": 7,
+                "periodicDurations": [
+                    5
+                ]
+            }
+        },
+        "Arcane Totem Destroy": {
+            "kill": {
+                "whichUnit": 3
+            }
+        },
+        "Arcane Totem Spawn Search": {
+            "areaSearch": {
+                "areaSearchType": {
+                    "circle": {}
+                },
+                "target": 0,
+                "filter": {
+                    "player": 2,
+                    "ally": 2,
+                    "neutral": 2,
+                    "unit": 2,
+                    "missile": 2,
+                    "structure": 2,
+                    "air": 2,
+                    "ground": 1,
+                    "stealth": 2,
+                    "invulerable": 2,
+                    "alive": 2
+                },
+                "effect": "Arcane Totem Create"
+            }
+        },
+        "Arcane Totem Weapon Damage": {
+            "damage": {
+                "damageAmount": 2
+            }
+        },
+        "Arcane Totem Weapon Launch": {
+            "launchMissile": {
+                "targetType": 3,
+                "missileUnit": "Arcane Totem Weapon Missile",
+                "effect": "Arcane Totem Weapon Damage",
+                "mover": "Arcane Totem Weapon Mover"
+            }
+        },
+        "Hero ArcaneMage Weapon Damage": {
+            "damage": {
+                "damageAmount": 5
+            }
+        },
+        "Hero ArcaneMage Weapon Launch": {
+            "launchMissile": {
+                "missileUnit": "Hero ArcaneMage Weapon Missile",
+                "missileDeathType": 0,
+                "effect": "Hero ArcaneMage Weapon Damage",
+                "mover": "Hero ArcaneMage Weapon Missile"
+            }
+        },
+        "Ice Spike Damage": {
+            "damage": {
+                "damageAmount": 2
+            }
+        },
+        "Ice Spike Delay": {
+            "persistent": {
+                "periodicCount": 1,
+                "finalEffect": "Ice Spike Search",
+                "periodicDurations": [
+                    1.5
+                ]
+            }
+        },
+        "Ice Spike Search": {
+            "areaSearch": {
+                "areaSearchType": {
+                    "circle": {
+                        "radius": 1
+                    }
+                },
+                "effect": "Ice Spike Damage"
+            }
+        },
+        "Standard Enemy Melee Damage Basic": {
+            "damage": {
+                "damageAmount": 5
+            }
+        },
+        "Standard Enemy Melee Damage Basic 2": {
+            "damage": {
+                "damageAmount": 8
+            }
+        },
+        "Standard Enemy Melee Damage Tier 3": {
+            "damage": {
+                "damageAmount": 20
+            }
+        },
+        "TestEffect": {
+            "enumerateUnitList": {
+                "useSearchLocation": {}
+            }
+        }
+    }
+}
